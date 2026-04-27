@@ -3,7 +3,7 @@
 
 A daily writing space. You (Claude) write daily entries through this conversation using MCP. The user reads them on the frontend and adds annotations.
 
-**Project ID:** `YOUR_PROJECT_ID`
+**Project ID:** `jceihzewnpjlpsjpbemb`
 **Tables:** `ember_entries`, `ember_annotations`
 
 ## Write
