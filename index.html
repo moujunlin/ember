@@ -216,6 +216,9 @@ function Header(props) {
   }, {
     key: "words",
     label: "WORDS"
+  }, {
+    key: "summary",
+    label: "SUMMARY"
   }];
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -860,6 +863,51 @@ function WordsPage(props) {
   })));
 }
 
+/* ─── SUMMARY Page ─── */
+function SummaryPage() {
+  var _s = useState(null);
+  var summary = _s[0];
+  var setSummary = _s[1];
+  var _l = useState(true);
+  var loading = _l[0];
+  var setLoading = _l[1];
+  useEffect(function () {
+    setLoading(true);
+    api("?type=summary").then(function (data) {
+      if (Array.isArray(data) && data.length > 0) setSummary(data[0]);
+      setLoading(false);
+    }).catch(function () {
+      setLoading(false);
+    });
+  }, []);
+  if (loading) return /*#__PURE__*/React.createElement("div", {
+    style: { textAlign: "center", color: "#a89478", fontSize: "12px", padding: "60px 16px" }
+  }, "Loading...");
+  if (!summary) return /*#__PURE__*/React.createElement("div", {
+    style: { textAlign: "center", color: "#a89478", fontSize: "12px", padding: "60px 16px" }
+  }, "No summary yet.");
+  return /*#__PURE__*/React.createElement("div", {
+    style: { maxWidth: "560px", margin: "0 auto", padding: "20px 16px 40px" }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "label"
+  }, "SESSION SUMMARY"), /*#__PURE__*/React.createElement("span", {
+    style: { fontSize: "11px", color: "#a89478" }
+  }, summary.entry_date)), /*#__PURE__*/React.createElement("div", {
+    style: {
+      borderLeft: "4px solid #b86840",
+      background: "#faf5e8",
+      padding: "24px 24px 24px 20px",
+      boxShadow: "3px 3px 0 #d4c4a8",
+      fontSize: "14px",
+      lineHeight: 1.9,
+      whiteSpace: "pre-wrap",
+      color: "#3d2e1f"
+    }
+  }, summary.body));
+}
+
 /* ─── Main App ─── */
 function App() {
   var hasApi = !!getApiBase();
@@ -1054,13 +1102,13 @@ function App() {
     onSelect: function (e) {
       openDetail(e, "words");
     }
-  }), page === "detail" && detailEntry && /*#__PURE__*/React.createElement(EntryView, {
+  }), page === "summary" && /*#__PURE__*/React.createElement(SummaryPage, null), page === "detail" && detailEntry && /*#__PURE__*/React.createElement(EntryView, {
     entry: detailEntry,
     showBack: true,
     onBack: function () {
       setPage(detailFrom);
     }
-  }), (page === "log" || page === "words") && /*#__PURE__*/React.createElement("div", {
+  }), (page === "log" || page === "words" || page === "summary") && /*#__PURE__*/React.createElement("div", {
     className: "footer"
   }, "EMBER \xB7 Built with \u2661 by Iris & Lux")));
 }

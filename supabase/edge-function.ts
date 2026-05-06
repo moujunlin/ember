@@ -62,10 +62,14 @@ Deno.serve(async (req) => {
       }
 
       // default: list all entries with annotation counts
-      const { data: entries, error } = await supabase
+      const typeFilter = url.searchParams.get("type");
+      let entriesQuery = supabase
         .from("ember_entries")
         .select("*")
         .order("entry_date", { ascending: false });
+      if (typeFilter) entriesQuery = entriesQuery.eq("type", typeFilter);
+      else entriesQuery = entriesQuery.eq("type", "diary");
+      const { data: entries, error } = await entriesQuery;
       if (error) throw error;
 
       // get annotation counts per entry
