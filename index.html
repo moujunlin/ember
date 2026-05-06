@@ -112,7 +112,7 @@ function api(path) {
   }).then(function (r) {
     return r.json().then(function (d) {
       if (!r.ok) throw new Error(d.error || r.status);
-      return d;
+      return d._context !== undefined ? d.data : d;
     });
   });
 }
@@ -128,7 +128,7 @@ function apiPost(path, body) {
   }).then(function (r) {
     return r.json().then(function (d) {
       if (!r.ok) throw new Error(d.error || r.status);
-      return d;
+      return d._context !== undefined ? d.data : d;
     });
   });
 }

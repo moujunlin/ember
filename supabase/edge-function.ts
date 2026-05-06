@@ -6,6 +6,30 @@ const cors = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
+async function getContext(sb: any) {
+  try {
+    const { data } = await sb.rpc("get_context");
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function respond(data: unknown, ctx: unknown, status = 200) {
+  const body = ctx != null ? { data, _context: ctx } : data;
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
+function errJson(msg: string, status = 500) {
+  return new Response(JSON.stringify({ error: msg }), {
+    status,
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: cors });
@@ -17,15 +41,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    const ctx = await getContext(supabase);
     const url = new URL(req.url);
     const pathParts = url.pathname.split("/").filter(Boolean);
     const resource = pathParts.length > 1 ? pathParts[pathParts.length - 1] : null;
-
-    // GET /ember → all entries (with annotation counts)
-    // GET /ember/entries → all entries
-    // GET /ember/entry?date=2026-04-16 → single entry + its annotations
-    // GET /ember/annotations?entry_id=uuid → annotations for an entry
-    // POST /ember/annotations → create annotation
 
     if (req.method === "GET") {
       if (resource === "entry") {
@@ -43,9 +62,7 @@ Deno.serve(async (req) => {
           .eq("entry_id", entry.id)
           .order("created_at");
 
-        return new Response(JSON.stringify({ ...entry, annotations: anns || [] }), {
-          headers: { ...cors, "Content-Type": "application/json" },
-        });
+        return respond({ ...entry, annotations: anns || [] }, ctx);
       }
 
       if (resource === "annotations") {
@@ -56,12 +73,9 @@ Deno.serve(async (req) => {
           .eq("entry_id", entryId)
           .order("created_at");
         if (error) throw error;
-        return new Response(JSON.stringify(data), {
-          headers: { ...cors, "Content-Type": "application/json" },
-        });
+        return respond(data, ctx);
       }
 
-      // default: list all entries with annotation counts
       const typeFilter = url.searchParams.get("type");
       let entriesQuery = supabase
         .from("ember_entries")
@@ -72,7 +86,6 @@ Deno.serve(async (req) => {
       const { data: entries, error } = await entriesQuery;
       if (error) throw error;
 
-      // get annotation counts per entry
       const ids = entries.map((e: any) => e.id);
       let annCounts: Record<string, number> = {};
       if (ids.length > 0) {
@@ -91,12 +104,9 @@ Deno.serve(async (req) => {
         annotation_count: annCounts[e.id] || 0,
       }));
 
-      return new Response(JSON.stringify(result), {
-        headers: { ...cors, "Content-Type": "application/json" },
-      });
+      return respond(result, ctx);
     }
 
-    // POST /ember/annotations → create annotation
     if (req.method === "POST" && resource === "annotations") {
       const body = await req.json();
       const { entry_id, quote, quote_start, quote_end, note } = body;
@@ -108,20 +118,11 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) throw error;
-      return new Response(JSON.stringify(data), {
-        status: 201,
-        headers: { ...cors, "Content-Type": "application/json" },
-      });
+      return respond(data, ctx, 201);
     }
 
-    return new Response(JSON.stringify({ error: "Not found" }), {
-      status: 404,
-      headers: { ...cors, "Content-Type": "application/json" },
-    });
+    return errJson("Not found", 404);
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { ...cors, "Content-Type": "application/json" },
-    });
+    return errJson(e.message);
   }
 });
