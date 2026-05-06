@@ -30,6 +30,13 @@ function errJson(msg: string, status = 500) {
   });
 }
 
+async function saveNote(sb: any, body: any) {
+  if (body?._note) {
+    try { await sb.from("lori_corridor").insert({ note: body._note }); } catch {}
+    delete body._note;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: cors });
@@ -109,6 +116,7 @@ Deno.serve(async (req) => {
 
     if (req.method === "POST" && resource === "annotations") {
       const body = await req.json();
+      await saveNote(supabase, body);
       const { entry_id, quote, quote_start, quote_end, note } = body;
 
       const { data, error } = await supabase
