@@ -54,6 +54,42 @@ Deno.serve(async (req) => {
     const resource = pathParts.length > 1 ? pathParts[pathParts.length - 1] : null;
 
     if (req.method === "GET") {
+      if (resource === "boot") {
+        const { data: summary } = await supabase
+          .from("ember_entries")
+          .select("*")
+          .eq("type", "summary")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        const { data: pinned } = await supabase
+          .from("notebook_entries")
+          .select("*")
+          .eq("pinned", true)
+          .eq("archived", false);
+
+        const { data: review } = await supabase
+          .from("tally_reviews")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        const { data: config } = await supabase
+          .from("system_config")
+          .select("value")
+          .eq("key", "claude_md")
+          .single();
+
+        return respond({
+          summary: summary || null,
+          pinned_notebook: pinned || [],
+          latest_review: review || null,
+          claude_md: config?.value || null,
+        }, ctx);
+      }
+
       if (resource === "entry") {
         const date = url.searchParams.get("date");
         const id = url.searchParams.get("id");
